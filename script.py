@@ -21,53 +21,47 @@ def get_stock_data(symbol):
         return None, None, None
 
 def send_daily_report(price, dollar_change, percent_change):
-    # השימוש ב-.strip() מונע את שגיאת ה-ValueError
+    # ניקוי משתנים מרווחים וירידות שורה
     email_user = os.environ.get('EMAIL_USER', '').strip()
     email_pass = os.environ.get('EMAIL_PASS', '').strip()
     dest_email = os.environ.get('PERSONAL_EMAIL', '').strip()
     
+    # בדיקה שהכתובות לא ריקות
+    if not email_user or not dest_email:
+        print(f"ERROR: Missing email addresses. User: '{email_user}', Dest: '{dest_email}'")
+        return
+
     today_date = datetime.now().strftime("%d/%m/%Y")
     msg = EmailMessage()
     
     if price and price != 0:
         total_value = price * MY_SHARES_COUNT
-        portfolio_change_dollars = (dollar_change or 0) * MY_SHARES_COUNT
+        p_change_dollars = (dollar_change or 0) * MY_SHARES_COUNT
         status = "עליה 🟢" if (percent_change or 0) > 0 else "ירידה 🔴"
         
         subject = f"דוח {MY_STOCK_SYMBOL} ליום {today_date} | {percent_change}%"
-        body = f"""
-שלום יואל,
-
-להלן סיכום הנתונים למניית {MY_STOCK_SYMBOL} לתאריך {today_date}:
-
-📈 נתוני שוק:
-מחיר מניה: ${price}
-שינוי יומי: {percent_change}% ({status})
-
-💰 נתוני התיק שלך (אחזקה של {MY_SHARES_COUNT} מניות):
-שינוי בשווי התיק היום: ${portfolio_change_dollars:,.2f}
-שווי כולל של הפוזיציה: ${total_value:,.2f}
-
-בברכה,
-מערכת Yoyo Stocks Market
-        """
+        body = f"שלום יואל,\n\nנתוני {MY_STOCK_SYMBOL} ל-{today_date}:\n\nמחיר: ${price}\nשינוי: {percent_change}% ({status})\n\nשווי תיק: ${total_value:,.2f}\nשינוי דולרי: ${p_change_dollars:,.2f}"
     else:
-        subject = f"תקלה בנתוני {MY_STOCK_SYMBOL} - {today_date}"
-        body = "לא הצלחנו למשוך נתונים עדכניים. וודא שחיבור ה-API תקין ב-GitHub Secrets."
+        subject = f"תקלה בנתוני {MY_STOCK_SYMBOL}"
+        body = "לא התקבלו נתונים מ-Finnhub."
 
     msg.set_content(body)
     msg['Subject'] = subject
-    msg['From'] = email_user # פשטנו את זה כדי למנוע שגיאות פורמט
+    msg['From'] = email_user
     msg['To'] = dest_email
 
-    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-        smtp.login(email_user, email_pass)
-        smtp.send_message(msg)
+    print(f"Sending email to {dest_email}...")
+    try:
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+            smtp.login(email_user, email_pass)
+            smtp.send_message(msg)
+        print("Success: Email sent!")
+    except Exception as e:
+        print(f"SMTP Error: {e}")
 
 def main():
-    price, dollar_change, percent_change = get_stock_data(MY_STOCK_SYMBOL)
-    send_daily_report(price, dollar_change, percent_change)
-    print("Execution finished successfully.")
+    price, d_change, p_change = get_stock_data(MY_STOCK_SYMBOL)
+    send_daily_report(price, d_change, p_change)
 
 if __name__ == "__main__":
     main()
