@@ -36,7 +36,7 @@ def main():
             f"💰 **מחיר מניה:** `${price}`\n"
             f"📈 **שינוי יומי:** `{p_change}%`\n"
             f"{color_line}\n"
-            f"💼 **התיק של יואל (24 מניות):**\n"
+            f"💼 **התיק של יהונתן (24 מניות):**\n"
             f"💵 **שווי כולל:** `${total_value:,.2f}`\n"
             f"💸 **רווח/הפסד יומי:** `${portfolio_change:,.2f}`\n"
             f"{color_line}"
