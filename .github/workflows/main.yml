@@ -2,8 +2,8 @@ name: Daily Stock Report
 
 on:
   schedule:
-    - cron: '30 21 * * *'
-  workflow_dispatch:
+    - cron: '30 21 * * *'  # ירוץ כל יום ב-23:30 שעון ישראל
+  workflow_dispatch:      # מאפשר לך להריץ ידנית בלחיצת כפתור
 
 jobs:
   run_script:
@@ -23,6 +23,5 @@ jobs:
       - name: Run Script
         env:
           FINNHUB_KEY: ${{ secrets.FINNHUB_KEY }}
-          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
-          PERSONAL_EMAIL: ${{ secrets.PERSONAL_EMAIL }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: python script.py
