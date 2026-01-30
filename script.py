@@ -17,7 +17,8 @@ def get_stock_data(symbol):
         data = response.json()
         # c = מחיר נוכחי, d = שינוי דולרי למניה אחת, dp = אחוז שינוי
         return data.get('c'), data.get('d'), data.get('dp')
-    except:
+    except Exception as e:
+        print(f"Error fetching data: {e}")
         return None, None, None
 
 def send_daily_report(price, dollar_change, percent_change):
@@ -28,11 +29,11 @@ def send_daily_report(price, dollar_change, percent_change):
     # תאריך של היום
     today_date = datetime.now().strftime("%d/%m/%Y")
     
+    msg = EmailMessage()
+    
     if price and price != 0:
         total_value = price * MY_SHARES_COUNT
-        # חישוב בכמה השווי הכולל עלה או ירד היום (שינוי למניה * כמות מניות)
         portfolio_change_dollars = dollar_change * MY_SHARES_COUNT
-        
         status = "עליה 🟢" if percent_change > 0 else "ירידה 🔴"
         
         subject = f"דוח {MY_STOCK_SYMBOL} ליום {today_date} | {percent_change}%"
@@ -54,9 +55,8 @@ def send_daily_report(price, dollar_change, percent_change):
         """
     else:
         subject = f"תקלה בנתוני {MY_STOCK_SYMBOL} - {today_date}"
-        body = "לא הצלחנו למשוך נתונים עדכניים. וודא שחיבור ה-API תקין."
+        body = "לא הצלחנו למשוך נתונים עדכניים. וודא שחיבור ה-API תקין ב-GitHub Secrets."
 
-    msg = EmailMessage()
     msg.set_content(body)
     msg['Subject'] = subject
     msg['From'] = f"Yoyo Stocks <{email_user}>"
@@ -69,7 +69,7 @@ def send_daily_report(price, dollar_change, percent_change):
 def main():
     price, dollar_change, percent_change = get_stock_data(MY_STOCK_SYMBOL)
     send_daily_report(price, dollar_change, percent_change)
-    print(f"Report sent for {today_date}")
+    print("Execution finished successfully.")
 
 if __name__ == "__main__":
     main()
