@@ -12,47 +12,40 @@ def get_stock_data(symbol):
     except:
         return None, None, None
 
-def send_via_brevo(price, dollar_change, percent_change):
-    api_key = os.environ.get('BREVO_API_KEY', '').strip()
-    dest_email = os.environ.get('PERSONAL_EMAIL', '').strip()
-    
-    today = datetime.now().strftime("%d/%m/%Y")
-    total_value = price * 24
-    status = "עליה 🟢" if percent_change > 0 else "ירידה 🔴"
-
-    url = "https://api.brevo.com/v3/smtp/email"
-    
-    payload = {
-        "sender": {"name": "Yoyo Stocks", "email": "yoyo.stocks.market@gmail.com"},
-        "to": [{"email": dest_email}],
-        "subject": f"דוח AT&T ליום {today} | {percent_change}%",
-        "textContent": (
-            f"שלום יואל,\n\n"
-            f"נתוני AT&T (סימול: T) ליום {today}:\n"
-            f"מחיר מניה: ${price}\n"
-            f"שינוי יומי: {percent_change}% ({status})\n\n"
-            f"התיק שלך (24 מניות):\n"
-            f"שינוי בשווי: ${dollar_change * 24:,.2f}\n"
-            f"שווי כולל: ${total_value:,.2f}"
-        )
-    }
-    
-    headers = {
-        "accept": "application/json",
-        "content-type": "application/json",
-        "api-key": api_key
-    }
-
-    response = requests.post(url, json=payload, headers=headers)
-    if response.status_code == 201:
-        print("Success! Email sent via Brevo API.")
-    else:
-        print(f"Failed: {response.status_code}, {response.text}")
+def send_to_discord(message):
+    webhook_url = os.environ.get('DISCORD_WEBHOOK', '').strip()
+    payload = {"content": message}
+    requests.post(webhook_url, json=payload)
 
 def main():
-    price, d_change, p_change = get_stock_data("T")
+    symbol = "T" # AT&T
+    shares = 24
+    price, d_change, p_change = get_stock_data(symbol)
+    
     if price:
-        send_via_brevo(price, d_change, p_change)
+        today = datetime.now().strftime("%d/%m/%Y")
+        total_value = price * shares
+        portfolio_change = d_change * shares
+        
+        status_icon = "🚀" if p_change > 0 else "🔻"
+        color_line = "------------------------------------"
+        
+        msg = (
+            f"**{status_icon} דוח יומי: {symbol} ({today})**\n"
+            f"{color_line}\n"
+            f"💰 **מחיר מניה:** `${price}`\n"
+            f"📈 **שינוי יומי:** `{p_change}%`\n"
+            f"{color_line}\n"
+            f"💼 **התיק של יואל (24 מניות):**\n"
+            f"💵 **שווי כולל:** `${total_value:,.2f}`\n"
+            f"💸 **רווח/הפסד יומי:** `${portfolio_change:,.2f}`\n"
+            f"{color_line}"
+        )
+        
+        send_to_discord(msg)
+        print("המייל נשלח לדיסקורד בהצלחה!")
+    else:
+        print("שגיאה במשיכת הנתונים.")
 
 if __name__ == "__main__":
     main()
