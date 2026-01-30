@@ -2,28 +2,28 @@ name: Daily Stock Report
 
 on:
   schedule:
-    # זמן ב-UTC. 21:30 UTC זה 23:30 שעון ישראל
+    # 21:30 UTC זה 23:30 שעון ישראל
     - cron: '30 21 * * *'
-  workflow_dispatch: # מאפשר לך להריץ ידנית לבדיקה
+  workflow_dispatch: # מאפשר הרצה ידנית בלחיצת כפתור
 
 jobs:
-  build:
+  run_script:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: actions/core/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: '3.9'
 
-      - name: Install dependencies
+      - name: Install Requests
         run: pip install requests
 
-      - name: Run script
+      - name: Run Script
         env:
-          FINNHUB_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          FINNHUB_KEY: ${{ secrets.FINNHUB_KEY }}
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
-          EMAIL_PASS: ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
         run: python script.py
