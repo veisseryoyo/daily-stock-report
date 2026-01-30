@@ -2,9 +2,8 @@ name: Daily Stock Report
 
 on:
   schedule:
-    # 21:30 UTC זה 23:30 שעון ישראל
     - cron: '30 21 * * *'
-  workflow_dispatch: # מאפשר הרצה ידנית בלחיצת כפתור
+  workflow_dispatch:
 
 jobs:
   run_script:
@@ -21,10 +20,10 @@ jobs:
       - name: Install Requests
         run: pip install requests
 
-   - name: Run Script
+      - name: Run Script
         env:
           FINNHUB_KEY: ${{ secrets.FINNHUB_KEY }}
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
           EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
-          PERSONAL_EMAIL: ${{ secrets.PERSONAL_EMAIL }}  # השורה הזו כנראה חסרה לך!
+          PERSONAL_EMAIL: ${{ secrets.PERSONAL_EMAIL }}
         run: python script.py
