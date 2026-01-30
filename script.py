@@ -10,31 +10,29 @@ MY_SHARES_COUNT = 24       # כמות מניות
 # ---------------------
 
 def get_stock_data(symbol):
-    api_key = os.environ.get('FINNHUB_KEY')
+    api_key = os.environ.get('FINNHUB_KEY', '').strip()
     url = f"https://finnhub.io/api/v1/quote?symbol={symbol}&token={api_key}"
     try:
         response = requests.get(url)
         data = response.json()
-        # c = מחיר נוכחי, d = שינוי דולרי למניה אחת, dp = אחוז שינוי
         return data.get('c'), data.get('d'), data.get('dp')
     except Exception as e:
         print(f"Error fetching data: {e}")
         return None, None, None
 
 def send_daily_report(price, dollar_change, percent_change):
-    email_user = os.environ.get('EMAIL_USER')
-    email_pass = os.environ.get('EMAIL_PASS')
-    dest_email = os.environ.get('PERSONAL_EMAIL')
+    # השימוש ב-.strip() מונע את שגיאת ה-ValueError
+    email_user = os.environ.get('EMAIL_USER', '').strip()
+    email_pass = os.environ.get('EMAIL_PASS', '').strip()
+    dest_email = os.environ.get('PERSONAL_EMAIL', '').strip()
     
-    # תאריך של היום
     today_date = datetime.now().strftime("%d/%m/%Y")
-    
     msg = EmailMessage()
     
     if price and price != 0:
         total_value = price * MY_SHARES_COUNT
-        portfolio_change_dollars = dollar_change * MY_SHARES_COUNT
-        status = "עליה 🟢" if percent_change > 0 else "ירידה 🔴"
+        portfolio_change_dollars = (dollar_change or 0) * MY_SHARES_COUNT
+        status = "עליה 🟢" if (percent_change or 0) > 0 else "ירידה 🔴"
         
         subject = f"דוח {MY_STOCK_SYMBOL} ליום {today_date} | {percent_change}%"
         body = f"""
@@ -59,7 +57,7 @@ def send_daily_report(price, dollar_change, percent_change):
 
     msg.set_content(body)
     msg['Subject'] = subject
-    msg['From'] = f"Yoyo Stocks <{email_user}>"
+    msg['From'] = email_user # פשטנו את זה כדי למנוע שגיאות פורמט
     msg['To'] = dest_email
 
     with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
