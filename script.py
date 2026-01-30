@@ -1,13 +1,6 @@
 import requests
-import smtplib
 import os
-from email.message import EmailMessage
 from datetime import datetime
-
-# --- הגדרות התיק שלך ---
-MY_STOCK_SYMBOL = "T"      # AT&T
-MY_SHARES_COUNT = 24       # כמות מניות
-# ---------------------
 
 def get_stock_data(symbol):
     api_key = os.environ.get('FINNHUB_KEY', '').strip()
@@ -16,52 +9,50 @@ def get_stock_data(symbol):
         response = requests.get(url)
         data = response.json()
         return data.get('c'), data.get('d'), data.get('dp')
-    except Exception as e:
-        print(f"Error fetching data: {e}")
+    except:
         return None, None, None
 
-def send_daily_report(price, dollar_change, percent_change):
-    # ניקוי משתנים מרווחים וירידות שורה
-    email_user = os.environ.get('EMAIL_USER', '').strip()
-    email_pass = os.environ.get('EMAIL_PASS', '').strip()
+def send_via_brevo(price, dollar_change, percent_change):
+    api_key = os.environ.get('BREVO_API_KEY', '').strip()
     dest_email = os.environ.get('PERSONAL_EMAIL', '').strip()
     
-    # בדיקה שהכתובות לא ריקות
-    if not email_user or not dest_email:
-        print(f"ERROR: Missing email addresses. User: '{email_user}', Dest: '{dest_email}'")
-        return
+    today = datetime.now().strftime("%d/%m/%Y")
+    total_value = price * 24
+    status = "עליה 🟢" if percent_change > 0 else "ירידה 🔴"
 
-    today_date = datetime.now().strftime("%d/%m/%Y")
-    msg = EmailMessage()
+    url = "https://api.brevo.com/v3/smtp/email"
     
-    if price and price != 0:
-        total_value = price * MY_SHARES_COUNT
-        p_change_dollars = (dollar_change or 0) * MY_SHARES_COUNT
-        status = "עליה 🟢" if (percent_change or 0) > 0 else "ירידה 🔴"
-        
-        subject = f"דוח {MY_STOCK_SYMBOL} ליום {today_date} | {percent_change}%"
-        body = f"שלום יואל,\n\nנתוני {MY_STOCK_SYMBOL} ל-{today_date}:\n\nמחיר: ${price}\nשינוי: {percent_change}% ({status})\n\nשווי תיק: ${total_value:,.2f}\nשינוי דולרי: ${p_change_dollars:,.2f}"
+    payload = {
+        "sender": {"name": "Yoyo Stocks", "email": "yoyo.stocks.market@gmail.com"},
+        "to": [{"email": dest_email}],
+        "subject": f"דוח AT&T ליום {today} | {percent_change}%",
+        "textContent": (
+            f"שלום יואל,\n\n"
+            f"נתוני AT&T (סימול: T) ליום {today}:\n"
+            f"מחיר מניה: ${price}\n"
+            f"שינוי יומי: {percent_change}% ({status})\n\n"
+            f"התיק שלך (24 מניות):\n"
+            f"שינוי בשווי: ${dollar_change * 24:,.2f}\n"
+            f"שווי כולל: ${total_value:,.2f}"
+        )
+    }
+    
+    headers = {
+        "accept": "application/json",
+        "content-type": "application/json",
+        "api-key": api_key
+    }
+
+    response = requests.post(url, json=payload, headers=headers)
+    if response.status_code == 201:
+        print("Success! Email sent via Brevo API.")
     else:
-        subject = f"תקלה בנתוני {MY_STOCK_SYMBOL}"
-        body = "לא התקבלו נתונים מ-Finnhub."
-
-    msg.set_content(body)
-    msg['Subject'] = subject
-    msg['From'] = email_user
-    msg['To'] = dest_email
-
-    print(f"Sending email to {dest_email}...")
-    try:
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-            smtp.login(email_user, email_pass)
-            smtp.send_message(msg)
-        print("Success: Email sent!")
-    except Exception as e:
-        print(f"SMTP Error: {e}")
+        print(f"Failed: {response.status_code}, {response.text}")
 
 def main():
-    price, d_change, p_change = get_stock_data(MY_STOCK_SYMBOL)
-    send_daily_report(price, d_change, p_change)
+    price, d_change, p_change = get_stock_data("T")
+    if price:
+        send_via_brevo(price, d_change, p_change)
 
 if __name__ == "__main__":
     main()
