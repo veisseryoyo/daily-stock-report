@@ -3,47 +3,40 @@ import smtplib
 import os
 from email.message import EmailMessage
 
-# 1. הגדרות - נתונים שנמשכים מה-Secrets של GitHub
-FINNHUB_API_KEY = os.environ.get('FINNHUB_KEY')
-EMAIL_ADDRESS = os.environ.get('EMAIL_USER')
-EMAIL_PASSWORD = os.environ.get('EMAIL_PASS')
-TARGET_SYMBOL = "TSLA"  # שנה כאן לכל מניה שתרצה, למשל AAPL או NVDA
-
-def get_stock_data(symbol):
-    url = f"https://finnhub.io/api/v1/quote?symbol={symbol}&token={FINNHUB_API_KEY}"
-    response = requests.get(url)
-    data = response.json()
-    # c = Current Price, dp = Percent Change
-    return data.get('c'), data.get('dp')
-
 def send_email(subject, body):
+    email_user = os.environ.get('EMAIL_USER')
+    email_pass = os.environ.get('EMAIL_PASS')
+    
     msg = EmailMessage()
     msg.set_content(body)
     msg['Subject'] = subject
-    msg['From'] = EMAIL_ADDRESS
-    msg['To'] = EMAIL_ADDRESS  # שולח לעצמך
+    msg['From'] = email_user
+    msg['To'] = email_user
 
-    # חיבור לשרת של גוגל
     with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-        smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+        smtp.login(email_user, email_pass)
         smtp.send_message(msg)
 
 def main():
+    print("Starting script...")
+    symbol = "TSLA"
+    api_key = os.environ.get('FINNHUB_KEY')
+    
+    url = f"https://finnhub.io/api/v1/quote?symbol={symbol}&token={api_key}"
+    
     try:
-        price, change = get_stock_data(TARGET_SYMBOL)
+        response = requests.get(url)
+        data = response.json()
+        price = data.get('c', 0)
         
-        if price:
-            status = "עליה" if change > 0 else "ירידה"
-            message = f"דוח מניית {TARGET_SYMBOL}:\n\nמחיר נוכחי: ${price}\nשינוי יומי: {change}%\nמגמה: {status}"
-            subject = f"דוח יומי: {TARGET_SYMBOL} ({change}%)"
-            
-            send_email(subject, message)
-            print(f"Success! Report sent for {TARGET_SYMBOL}")
-        else:
-            print("Could not fetch data from Finnhub.")
-            
+        # גם אם המחיר הוא 0 (כי השוק סגור), נשלח מייל לבדיקה
+        subject = f"בדיקת מערכת: {symbol}"
+        body = f"הסקריפט רץ בהצלחה!\nמחיר נוכחי שנמצא: ${price}"
+        
+        send_email(subject, body)
+        print("Email sent!")
     except Exception as e:
-        print(f"Error occurred: {e}")
+        print(f"Error: {e}")
 
 if __name__ == "__main__":
     main()
