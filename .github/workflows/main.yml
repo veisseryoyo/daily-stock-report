@@ -12,7 +12,15 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-     - name: Run Script
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install Requests
+        run: pip install requests
+
+      - name: Run Script
         env:
           FINNHUB_KEY: ${{ secrets.FINNHUB_KEY }}
           BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
